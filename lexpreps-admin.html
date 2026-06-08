@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LexPreps — Team Availability</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --navy: #0d2340; --navy-mid: #1a3a5c; --navy-light: #2a5080; --navy-pale: #e8eef5;
+    --gold: #c9a84c; --gold-light: #f0e0a8; --white: #ffffff; --off-white: #f7f9fc;
+    --text: #1a2533; --text-muted: #5a6a7a; --border: rgba(13,35,64,0.12);
+    --radius: 10px; --radius-lg: 16px;
+    --font-display: 'Playfair Display', Georgia, serif; --font-body: 'DM Sans', system-ui, sans-serif;
+    --shadow: 0 4px 24px rgba(13,35,64,0.10); --shadow-sm: 0 2px 8px rgba(13,35,64,0.07);
+    --virtual: #1a3a5c; --virtual-bg: #e8eef5; --inperson: #7a4a0a; --inperson-bg: #fdf3e0;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-body); color: var(--text); background: var(--off-white); line-height: 1.6; font-size: 15px; }
+  header { background: var(--navy); color: var(--white); padding: 0 2rem; height: 60px; display: flex; align-items: center; gap: 1rem; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow); }
+  .brand { font-family: var(--font-display); font-size: 1.3rem; font-weight: 700; color: var(--white); margin-right: auto; }
+  .brand span { color: var(--gold); }
+  .admin-badge { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; background: rgba(201,168,76,0.2); color: var(--gold-light); border: 1px solid rgba(201,168,76,0.3); padding: 0.25rem 0.65rem; border-radius: 100px; }
+  .sync-status { font-size: 0.78rem; color: rgba(255,255,255,0.6); display: flex; align-items: center; gap: 5px; }
+  .sync-dot { width: 7px; height: 7px; border-radius: 50%; background: #4caf50; }
+  .sync-dot.syncing { background: var(--gold); animation: pulse 1s infinite; }
+  .sync-dot.error { background: #f44336; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .layout { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 60px); }
+  .sidebar { background: var(--white); border-right: 1px solid var(--border); padding: 1.5rem 1.2rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  .sidebar-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); padding: 0.4rem 0.6rem; margin-top: 0.5rem; }
+  .tutor-btn { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 0.8rem; border-radius: var(--radius); border: none; background: none; cursor: pointer; width: 100%; text-align: left; transition: background 0.12s; color: var(--text); }
+  .tutor-btn:hover { background: var(--navy-pale); }
+  .tutor-btn.active { background: var(--navy-pale); }
+  .tutor-btn.active .tutor-name { color: var(--navy); font-weight: 600; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--navy); color: var(--gold); display: flex; align-items: center; justify-content: center; font-family: var(--font-display); font-size: 0.95rem; font-weight: 700; flex-shrink: 0; }
+  .tutor-name { font-size: 0.92rem; font-weight: 500; }
+  .tutor-count { font-size: 0.75rem; color: var(--text-muted); margin-top: 1px; }
+  .legend { margin-top: auto; padding-top: 1.5rem; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 0.5rem; }
+  .legend-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--text-muted); }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0; }
+  .main { padding: 2rem; overflow-y: auto; }
+  .main-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+  .main-title { font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; color: var(--navy); }
+  .main-sub { font-size: 0.85rem; color: var(--text-muted); margin-top: 2px; }
+  .month-nav { display: flex; align-items: center; gap: 0.5rem; }
+  .mnav-btn { background: var(--white); border: 1px solid var(--border); border-radius: 7px; width: 32px; height: 32px; cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center; color: var(--navy); transition: background 0.12s; }
+  .mnav-btn:hover { background: var(--navy-pale); }
+  .month-label { font-weight: 600; font-size: 0.95rem; color: var(--navy); min-width: 130px; text-align: center; }
+  .cal-wrap { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm); }
+  .cal-day-labels { display: grid; grid-template-columns: repeat(7, 1fr); background: var(--navy); }
+  .cal-day-label { text-align: center; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.06em; color: rgba(255,255,255,0.6); padding: 0.6rem 0; text-transform: uppercase; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); border-top: 1px solid var(--border); }
+  .cal-cell { min-height: 90px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 6px; cursor: pointer; transition: background 0.12s; position: relative; }
+  .cal-cell:nth-child(7n) { border-right: none; }
+  .cal-cell:hover:not(.empty):not(.past) { background: var(--navy-pale); }
+  .cal-cell.empty { background: var(--off-white); cursor: default; }
+  .cal-cell.past { background: #fafafa; cursor: default; opacity: 0.6; }
+  .cal-cell.today { background: #fffbf0; }
+  .day-num { font-size: 0.8rem; font-weight: 500; color: var(--text-muted); margin-bottom: 4px; }
+  .cal-cell.today .day-num { color: var(--gold); font-weight: 700; }
+  .cal-cell.past .day-num { color: #bbb; }
+  .slot-tags { display: flex; flex-direction: column; gap: 2px; }
+  .slot-tag { font-size: 0.67rem; font-weight: 600; padding: 2px 5px; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+  .slot-tag.virtual { background: var(--virtual-bg); color: var(--virtual); }
+  .slot-tag.inperson { background: var(--inperson-bg); color: var(--inperson); }
+  .slot-tag:hover { opacity: 0.75; }
+  .add-dot { position: absolute; bottom: 5px; right: 6px; width: 18px; height: 18px; border-radius: 50%; background: var(--navy-pale); color: var(--navy); font-size: 0.9rem; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.12s; font-weight: 300; }
+  .cal-cell:hover:not(.empty):not(.past) .add-dot { opacity: 1; }
+  .modal-overlay { position: fixed; inset: 0; background: rgba(13,35,64,0.45); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+  .modal-overlay.hidden { display: none; }
+  .modal { background: var(--white); border-radius: var(--radius-lg); padding: 2rem; width: 100%; max-width: 440px; box-shadow: var(--shadow); }
+  .modal-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.4rem; }
+  .modal-title { font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; color: var(--navy); }
+  .modal-date { font-size: 0.82rem; color: var(--text-muted); margin-top: 2px; }
+  .modal-close { background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--text-muted); line-height: 1; padding: 2px 6px; border-radius: 5px; }
+  .modal-close:hover { background: var(--off-white); }
+  .form-group { margin-bottom: 1.1rem; }
+  .form-label { font-size: 0.8rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.4rem; display: block; }
+  .type-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .type-opt { border: 2px solid var(--border); border-radius: 8px; padding: 0.6rem; text-align: center; cursor: pointer; font-size: 0.85rem; font-weight: 500; transition: border-color 0.12s, background 0.12s; color: var(--text); background: var(--white); }
+  .type-opt:hover { border-color: var(--navy-light); }
+  .type-opt.sel-virtual { border-color: var(--virtual); background: var(--virtual-bg); color: var(--virtual); }
+  .type-opt.sel-inperson { border-color: var(--gold); background: var(--inperson-bg); color: var(--inperson); }
+  .time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  select { width: 100%; padding: 0.55rem 0.75rem; border: 1px solid var(--border); border-radius: 8px; font-family: var(--font-body); font-size: 0.9rem; color: var(--text); background: var(--white); appearance: none; transition: border-color 0.12s; }
+  select:focus { outline: none; border-color: var(--navy-light); }
+  .existing-slots { margin-bottom: 1.1rem; }
+  .existing-slot { display: flex; align-items: center; justify-content: space-between; padding: 0.45rem 0.7rem; border-radius: 7px; margin-bottom: 5px; font-size: 0.85rem; }
+  .existing-slot.virtual { background: var(--virtual-bg); color: var(--virtual); }
+  .existing-slot.inperson { background: var(--inperson-bg); color: var(--inperson); }
+  .del-btn { background: none; border: none; cursor: pointer; font-size: 1rem; opacity: 0.5; line-height: 1; padding: 0 3px; }
+  .del-btn:hover { opacity: 1; }
+  .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.4rem; }
+  .btn-cancel { background: var(--off-white); color: var(--text); border: 1px solid var(--border); font-size: 0.88rem; font-weight: 500; padding: 0.55rem 1.2rem; border-radius: 8px; cursor: pointer; }
+  .btn-cancel:hover { background: var(--navy-pale); }
+  .btn-add { background: var(--navy); color: var(--white); border: none; font-size: 0.88rem; font-weight: 600; padding: 0.55rem 1.4rem; border-radius: 8px; cursor: pointer; transition: opacity 0.12s; }
+  .btn-add:hover { opacity: 0.88; }
+  .btn-add:disabled { opacity: 0.4; cursor: not-allowed; }
+  .toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: var(--navy); color: var(--white); padding: 0.75rem 1.2rem; border-radius: 10px; font-size: 0.88rem; font-weight: 500; box-shadow: var(--shadow); opacity: 0; transform: translateY(8px); transition: opacity 0.2s, transform 0.2s; pointer-events: none; z-index: 300; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.8); z-index: 500; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 1rem; font-size: 0.95rem; color: var(--navy); }
+  .loading-overlay.hidden { display: none; }
+  .spinner { width: 32px; height: 32px; border: 3px solid var(--navy-pale); border-top-color: var(--navy); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .login-screen { position: fixed; inset: 0; background: var(--navy); z-index: 600; display: flex; align-items: center; justify-content: center; }
+  .login-screen.hidden { display: none; }
+  .login-box { background: var(--white); border-radius: var(--radius-lg); padding: 2.5rem 2rem; width: 100%; max-width: 360px; text-align: center; box-shadow: var(--shadow); }
+  .login-logo { font-family: var(--font-display); font-size: 2rem; font-weight: 700; color: var(--navy); margin-bottom: 0.3rem; }
+  .login-logo span { color: var(--gold); }
+  .login-sub { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 2rem; }
+  .login-input { width: 100%; padding: 0.7rem 1rem; border: 1.5px solid var(--border); border-radius: 8px; font-family: var(--font-body); font-size: 1rem; color: var(--text); margin-bottom: 1rem; text-align: center; letter-spacing: 0.05em; }
+  .login-input:focus { outline: none; border-color: var(--navy-light); }
+  .login-input.error { border-color: #e53e3e; }
+  .login-btn { width: 100%; background: var(--navy); color: var(--white); border: none; border-radius: 8px; padding: 0.75rem; font-family: var(--font-body); font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: opacity 0.15s; }
+  .login-btn:hover { opacity: 0.88; }
+  .login-error { color: #e53e3e; font-size: 0.82rem; margin-top: 0.6rem; min-height: 1rem; }
+  /* Tabs */
+  .admin-nav { display: flex; gap: 4px; margin: 0 auto; }
+  .admin-nav-btn { background: rgba(255,255,255,0.1); border: none; color: rgba(255,255,255,0.65); font-family: var(--font-body); font-size: 0.88rem; font-weight: 500; padding: 0.4rem 1.1rem; border-radius: 7px; cursor: pointer; transition: background 0.15s, color 0.15s; }
+  .admin-nav-btn:hover { background: rgba(255,255,255,0.18); color: var(--white); }
+  .admin-nav-btn.active { background: var(--white); color: var(--navy); font-weight: 700; }
+  .tab-page { min-height: calc(100vh - 60px); }
+  /* Bookings calendar */
+  .bk-tag { font-size: 0.67rem; font-weight: 600; padding: 2px 5px; border-radius: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; cursor: pointer; display: block; }
+  .bk-tag.virtual { background: var(--virtual-bg); color: var(--virtual); }
+  .bk-tag.consultation { background: #dcfce7; color: #166534; }
+  .detail-badge.consultation { background: #dcfce7; color: #166534; }
+  .bk-tag.inperson { background: var(--inperson-bg); color: var(--inperson); }
+  .bk-tag:hover { opacity: 0.75; }
+  .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0; border-top: 1px solid var(--border); font-size: 0.9rem; }
+  .detail-row:first-of-type { border-top: none; }
+  .detail-badge { font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.6rem; border-radius: 100px; }
+  .detail-badge.virtual { background: var(--virtual-bg); color: var(--virtual); }
+  .detail-badge.inperson { background: var(--inperson-bg); color: var(--inperson); }
+  .btn-danger { background: #e53e3e; color: var(--white); border: none; font-size: 0.82rem; font-weight: 600; padding: 0.4rem 0.9rem; border-radius: 7px; cursor: pointer; transition: opacity 0.15s; }
+  .btn-danger:hover { opacity: 0.85; }
+  .btn-create { background: var(--gold); color: var(--navy); border: none; font-size: 0.88rem; font-weight: 700; padding: 0.5rem 1.2rem; border-radius: 8px; cursor: pointer; transition: opacity 0.15s; display: flex; align-items: center; gap: 6px; }
+  .btn-create:hover { opacity: 0.88; }
+  .confirm-overlay { position: fixed; inset: 0; background: rgba(13,35,64,0.5); z-index: 300; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+  .confirm-overlay.hidden { display: none; }
+  .confirm-box { background: var(--white); border-radius: var(--radius-lg); padding: 2rem; max-width: 380px; width: 100%; box-shadow: var(--shadow); text-align: center; }
+  .confirm-box h3 { font-family: var(--font-display); font-size: 1.2rem; color: var(--navy); margin-bottom: 0.5rem; }
+  .confirm-box p { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.5rem; line-height: 1.6; }
+  .confirm-actions { display: flex; gap: 0.75rem; justify-content: center; }
+  .edit-slot-row { background: var(--white); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; margin-bottom: 0.75rem; }
+  .edit-slot-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
+  .edit-slot-label { font-size: 0.82rem; font-weight: 600; color: var(--navy); }
+  .edit-slot-actions { display: flex; gap: 0.5rem; }
+  .btn-sm-save { background: var(--navy); color: var(--white); border: none; font-size: 0.78rem; font-weight: 600; padding: 0.3rem 0.75rem; border-radius: 6px; cursor: pointer; transition: opacity 0.12s; }
+  .btn-sm-save:hover { opacity: 0.85; }
+  .btn-sm-save:disabled { opacity: 0.35; cursor: not-allowed; }
+  .btn-sm-del { background: #fee2e2; color: #c53030; border: none; font-size: 0.78rem; font-weight: 600; padding: 0.3rem 0.75rem; border-radius: 6px; cursor: pointer; transition: opacity 0.12s; }
+  .btn-sm-del:hover { opacity: 0.8; }
+  .edit-time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .edit-conflict-msg { font-size: 0.78rem; color: #c53030; margin-top: 0.4rem; display: none; }
+  .repeat-section { background: var(--off-white); border: 1px solid var(--border); border-radius: var(--radius); padding: 1rem; margin-bottom: 0.75rem; }
+  .repeat-toggle { display: flex; align-items: center; gap: 0.6rem; cursor: pointer; font-size: 0.88rem; font-weight: 500; color: var(--navy); margin-bottom: 0; }
+  .repeat-toggle input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: var(--navy); }
+  .repeat-options { margin-top: 0.9rem; display: none; }
+  .repeat-options.visible { display: block; }
+  .repeat-freq { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  .repeat-freq-btn { border: 1.5px solid var(--border); border-radius: 6px; padding: 0.3rem 0.75rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; background: var(--white); color: var(--text); font-family: var(--font-body); transition: all 0.12s; }
+  .repeat-freq-btn.active { border-color: var(--navy); background: var(--navy); color: var(--white); }
+  .repeat-days { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  .repeat-day-btn { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--border); font-size: 0.75rem; font-weight: 600; cursor: pointer; background: var(--white); color: var(--text); font-family: var(--font-body); display: flex; align-items: center; justify-content: center; transition: all 0.12s; }
+  .repeat-day-btn.active { border-color: var(--navy); background: var(--navy); color: var(--white); }
+  .repeat-until { display: flex; align-items: center; gap: 0.6rem; font-size: 0.85rem; }
+  .repeat-until label { color: var(--text-muted); font-weight: 500; white-space: nowrap; }
+  .repeat-until input[type=date] { padding: 0.4rem 0.6rem; border: 1px solid var(--border); border-radius: 7px; font-family: var(--font-body); font-size: 0.85rem; color: var(--text); }
+  .repeat-preview { font-size: 0.78rem; color: var(--navy-light); margin-top: 0.6rem; font-style: italic; }
+</style>
+</head>
+<body>
+
+<div class="login-screen" id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">Lex<span>Preps</span></div>
+    <div class="login-sub">Team Portal — Enter your admin password</div>
+    <div style="position:relative;margin-bottom:1rem;">
+      <input class="login-input" type="password" id="login-input" placeholder="Password" style="margin-bottom:0;padding-right:3rem;" />
+      <button id="toggle-pw" type="button" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--text-muted);padding:4px;" title="Show/hide password">👁</button>
+    </div>
+    <button class="login-btn" id="login-btn">Enter Portal</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<div class="loading-overlay" id="loading-overlay">
+  <div class="spinner"></div>
+  <div>Connecting to Firebase…</div>
+</div>
+
+<header>
+  <div class="brand">Lex<span>Preps</span></div>
+  <div class="admin-badge">Team Portal</div>
+  <nav class="admin-nav">
+    <button class="admin-nav-btn active" id="tab-availability" onclick="showTab('availability')">Availability</button>
+    <button class="admin-nav-btn" id="tab-bookings" onclick="showTab('bookings')">Booked Lessons</button>
+  </nav>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:1rem;">
+    <a href="https://lexprepsma.netlify.app" style="font-size:0.82rem;font-weight:500;color:rgba(255,255,255,0.65);text-decoration:none;display:flex;align-items:center;gap:5px;transition:color 0.15s;" onmouseover="this.style.color='rgba(255,255,255,1)'" onmouseout="this.style.color='rgba(255,255,255,0.65)'">← Main Site</a>
+    <div class="sync-status"><div class="sync-dot syncing" id="sync-dot"></div><span id="sync-label">Connecting…</span></div>
+  </div>
+</header>
+
+<!-- TAB: Availability -->
+<div id="page-availability" class="tab-page active">
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-label">Tutors</div>
+    <button class="tutor-btn active" onclick="selectTutor('Dular','D',this)" id="tb-Dular">
+      <div class="avatar">D</div>
+      <div><div class="tutor-name">Dular</div><div class="tutor-count" id="count-Dular">0 slots</div></div>
+    </button>
+    <button class="tutor-btn" onclick="selectTutor('Atreya','A',this)" id="tb-Atreya">
+      <div class="avatar">A</div>
+      <div><div class="tutor-name">Atreya</div><div class="tutor-count" id="count-Atreya">0 slots</div></div>
+    </button>
+    <button class="tutor-btn" onclick="selectTutor('Jack','J',this)" id="tb-Jack">
+      <div class="avatar">J</div>
+      <div><div class="tutor-name">Jack</div><div class="tutor-count" id="count-Jack">0 slots</div></div>
+    </button>
+    <div class="legend">
+      <div style="font-size:0.75rem;font-weight:600;color:var(--text-muted);margin-bottom:4px;">Slot Types</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--virtual-bg);border:1.5px solid var(--virtual)"></div>Virtual</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--inperson-bg);border:1.5px solid var(--gold)"></div>In-Person</div>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="main-header">
+      <div>
+        <div class="main-title" id="main-title">Dular's Availability</div>
+        <div class="main-sub">Click any date to add or manage time slots — syncs live to Firebase</div>
+      </div>
+      <div class="month-nav">
+        <button class="mnav-btn" onclick="changeMonth(-1)">‹</button>
+        <div class="month-label" id="month-label"></div>
+        <button class="mnav-btn" onclick="changeMonth(1)">›</button>
+      </div>
+    </div>
+    <div class="cal-wrap">
+      <div class="cal-day-labels">
+        <div class="cal-day-label">Sun</div><div class="cal-day-label">Mon</div><div class="cal-day-label">Tue</div>
+        <div class="cal-day-label">Wed</div><div class="cal-day-label">Thu</div><div class="cal-day-label">Fri</div>
+        <div class="cal-day-label">Sat</div>
+      </div>
+      <div class="cal-grid" id="cal-grid"></div>
+    </div>
+  </main>
+</div>
+</div>
+
+<!-- TAB: Booked Lessons -->
+<div id="page-bookings" class="tab-page" style="display:none;">
+<div class="main" style="max-width:1050px;margin:0 auto;">
+  <div class="main-header" style="margin-bottom:1.5rem;">
+    <div>
+      <div class="main-title">Booked Lessons</div>
+      <div class="main-sub">All confirmed student bookings</div>
+    </div>
+    <button class="btn-create" id="btn-create-booking" onclick="openCreateBookingModal()">＋ Create Booking</button>
+    <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;">
+      <select id="bookings-tutor-select" onchange="renderBookingsTab()" style="padding:0.5rem 0.9rem;border:1px solid var(--border);border-radius:8px;font-family:var(--font-body);font-size:0.9rem;color:var(--navy);background:var(--white);font-weight:600;cursor:pointer;">
+        <option value="all">All Tutors</option>
+        <option value="Dular">Dular</option>
+        <option value="Atreya">Atreya</option>
+        <option value="Jack">Jack</option>
+      </select>
+      <div class="month-nav">
+        <button class="mnav-btn" onclick="changeBookingsMonth(-1)">‹</button>
+        <div class="month-label" id="bookings-month-label"></div>
+        <button class="mnav-btn" onclick="changeBookingsMonth(1)">›</button>
+      </div>
+    </div>
+  </div>
+  <div class="cal-wrap">
+    <div class="cal-day-labels">
+      <div class="cal-day-label">Sun</div><div class="cal-day-label">Mon</div><div class="cal-day-label">Tue</div>
+      <div class="cal-day-label">Wed</div><div class="cal-day-label">Thu</div><div class="cal-day-label">Fri</div>
+      <div class="cal-day-label">Sat</div>
+    </div>
+    <div class="cal-grid" id="bookings-cal-grid"></div>
+  </div>
+  <!-- Booking detail panel -->
+  <div id="booking-detail-panel" style="display:none;margin-top:1.5rem;">
+    <div class="cal-wrap" style="padding:1.5rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+        <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:700;color:var(--navy);" id="detail-date-label"></div>
+        <button onclick="document.getElementById('booking-detail-panel').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--text-muted);">✕</button>
+      </div>
+      <div id="detail-list"></div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="modal-overlay hidden" id="modal-overlay">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modal-title">Manage Availability</div>
+        <div class="modal-date" id="modal-date"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+
+    <!-- Existing slots with edit/delete -->
+    <div id="existing-slots"></div>
+
+    <!-- Divider -->
+    <div style="border-top:1px solid var(--border);margin:1rem 0;"></div>
+
+    <!-- Add new slot -->
+    <div style="font-size:0.75rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.75rem;">Add New Slot</div>
+    <div class="form-group">
+      <label class="form-label">Lesson Type</label>
+      <div class="type-toggle">
+        <button class="type-opt" id="opt-virtual" onclick="setType('virtual')">💻 Virtual</button>
+        <button class="type-opt" id="opt-inperson" onclick="setType('inperson')">🏠 In-Person</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Time Window</label>
+      <div class="time-row">
+        <select id="sel-start"><option value="">Start time</option></select>
+        <select id="sel-end"><option value="">End time</option></select>
+      </div>
+    </div>
+    <!-- Repeat section -->
+    <div class="repeat-section">
+      <label class="repeat-toggle">
+        <input type="checkbox" id="repeat-toggle-cb" onchange="toggleRepeat()" />
+        Repeat this slot
+      </label>
+      <div class="repeat-options" id="repeat-options">
+        <div style="font-size:0.75rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.5rem;">Frequency</div>
+        <div class="repeat-freq">
+          <button class="repeat-freq-btn active" data-freq="weekly" onclick="setRepeatFreq('weekly',this)">Weekly</button>
+          <button class="repeat-freq-btn" data-freq="biweekly" onclick="setRepeatFreq('biweekly',this)">Every 2 Weeks</button>
+          <button class="repeat-freq-btn" data-freq="daily" onclick="setRepeatFreq('daily',this)">Daily</button>
+        </div>
+        <div id="repeat-days-wrap">
+          <div style="font-size:0.75rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.5rem;">Repeat On</div>
+          <div class="repeat-days" id="repeat-days">
+            <button class="repeat-day-btn" data-day="0" onclick="toggleRepeatDay(0,this)">Su</button>
+            <button class="repeat-day-btn" data-day="1" onclick="toggleRepeatDay(1,this)">Mo</button>
+            <button class="repeat-day-btn" data-day="2" onclick="toggleRepeatDay(2,this)">Tu</button>
+            <button class="repeat-day-btn" data-day="3" onclick="toggleRepeatDay(3,this)">We</button>
+            <button class="repeat-day-btn" data-day="4" onclick="toggleRepeatDay(4,this)">Th</button>
+            <button class="repeat-day-btn" data-day="5" onclick="toggleRepeatDay(5,this)">Fr</button>
+            <button class="repeat-day-btn" data-day="6" onclick="toggleRepeatDay(6,this)">Sa</button>
+          </div>
+        </div>
+        <div class="repeat-until">
+          <label>End date</label>
+          <input type="date" id="repeat-until-date" onchange="updateRepeatPreview()" />
+        </div>
+        <div class="repeat-preview" id="repeat-preview"></div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Close</button>
+      <button class="btn-add" id="btn-add-slot" onclick="addSlot()" disabled>Add Slot</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete confirm overlay -->
+<div class="confirm-overlay hidden" id="confirm-overlay">
+  <div class="confirm-box">
+    <h3>Delete Booking?</h3>
+    <p id="confirm-msg">This will permanently remove this booking and free up the time slot.</p>
+    <div class="confirm-actions">
+      <button class="btn-cancel" onclick="document.getElementById('confirm-overlay').classList.add('hidden')">Cancel</button>
+      <button class="btn-danger" id="confirm-delete-btn">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create Booking Modal -->
+<div class="modal-overlay hidden" id="create-modal-overlay">
+  <div class="modal" style="max-width:500px;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Create a Booking</div>
+        <div class="modal-date">Manually add a lesson for a student</div>
+      </div>
+      <button class="modal-close" onclick="closeCreateModal()">✕</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Tutor</label>
+      <select id="create-tutor">
+        <option value="">Select tutor…</option>
+        <option value="Dular">Dular</option>
+        <option value="Atreya">Atreya</option>
+        <option value="Jack">Jack</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Lesson Type</label>
+      <div class="type-toggle">
+        <button class="type-opt" id="create-opt-virtual" onclick="setCreateType('virtual')">💻 Virtual</button>
+        <button class="type-opt" id="create-opt-inperson" onclick="setCreateType('inperson')">🏠 In-Person</button>
+      </div>
+    </div>
+    <div class="form-group" id="create-location-group" style="display:none;">
+      <label class="form-label">Location</label>
+      <input type="text" id="create-location" placeholder="e.g. 123 Main St, Lexington" style="width:100%;padding:0.55rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:var(--font-body);font-size:0.9rem;color:var(--text);" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Date</label>
+      <input type="date" id="create-date" style="width:100%;padding:0.55rem 0.75rem;border:1px solid var(--border);border-radius:8px;font-family:var(--font-body);font-size:0.9rem;color:var(--text);" />
+    </div>
+    <div class="form-group">
+      <label class="form-label">Start Time</label>
+      <select id="create-start"><option value="">Select start time…</option></select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Duration</label>
+      <div class="type-toggle">
+        <button class="type-opt" id="create-dur-60" onclick="setCreateDuration(60,this)">1 hour</button>
+        <button class="type-opt" id="create-dur-120" onclick="setCreateDuration(120,this)">2 hours</button>
+      </div>
+    </div>
+    <div id="create-conflict-msg" style="display:none;background:#fff5f5;border:1px solid #fed7d7;border-radius:8px;padding:0.7rem 1rem;font-size:0.85rem;color:#c53030;margin-bottom:1rem;"></div>
+    <div id="create-endtime-preview" style="display:none;background:var(--navy-pale);border-radius:8px;padding:0.6rem 1rem;font-size:0.85rem;color:var(--navy);margin-bottom:1rem;font-weight:500;"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeCreateModal()">Cancel</button>
+      <button class="btn-add" id="btn-save-booking" onclick="saveCreatedBooking()" disabled>Save Booking</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Firebase SDK -->
+<script>
+// Login logic in regular script so onclick and keydown work correctly
+const _ADMIN_PW = 'DueyMobile4ever';
+
+// Repeat availability bridges
+function toggleRepeat() { if (window.toggleRepeat) window.toggleRepeat(); }
+function setRepeatFreq(f, el) { if (window.setRepeatFreq) window.setRepeatFreq(f, el); }
+function toggleRepeatDay(d, el) { if (window.toggleRepeatDay) window.toggleRepeatDay(d, el); }
+function updateRepeatPreview() { if (window.updateRepeatPreview) window.updateRepeatPreview(); }
+
+function tryLogin() {
+  const val = document.getElementById('login-input').value;
+  const errEl = document.getElementById('login-error');
+  const inputEl = document.getElementById('login-input');
+  if (val === _ADMIN_PW) {
+    sessionStorage.setItem('lp_auth', val);
+    document.getElementById('login-screen').classList.add('hidden');
+    errEl.textContent = '';
+    inputEl.classList.remove('error');
+  } else {
+    errEl.textContent = 'Incorrect password. Try again.';
+    inputEl.classList.add('error');
+    inputEl.value = '';
+    inputEl.focus();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Enter key on password field
+  document.getElementById('login-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') tryLogin();
+  });
+  // Enter Portal button
+  document.getElementById('login-btn').addEventListener('click', tryLogin);
+  // Show/hide password toggle
+  document.getElementById('toggle-pw').addEventListener('click', function() {
+    const inp = document.getElementById('login-input');
+    const isHidden = inp.type === 'password';
+    inp.type = isHidden ? 'text' : 'password';
+    this.textContent = isHidden ? '🙈' : '👁';
+  });
+});
+</script>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, setDoc, deleteDoc, onSnapshot, collection, addDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const ADMIN_PASSWORD = 'DueyMobile4ever';
+
+// Show login screen or skip if already authenticated this session
+if (sessionStorage.getItem('lp_auth') === ADMIN_PASSWORD) {
+  document.getElementById('login-screen').classList.add('hidden');
+}
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDJsWppFY6rNOnh3v5vJfqnzuKLBYfdH-0",
+  authDomain: "lexpreps-b61d5.firebaseapp.com",
+  projectId: "lexpreps-b61d5",
+  storageBucket: "lexpreps-b61d5.firebasestorage.app",
+  messagingSenderId: "1090805836719",
+  appId: "1:1090805836719:web:3518991c81d5b1ae931d5a",
+  measurementId: "G-2Q8YR30VP6"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const TIMES = ['7:00 AM','7:30 AM','8:00 AM','8:30 AM','9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM','12:00 PM','12:30 PM','1:00 PM','1:30 PM','2:00 PM','2:30 PM','3:00 PM','3:30 PM','4:00 PM','4:30 PM','5:00 PM','5:30 PM','6:00 PM','6:30 PM','7:00 PM','7:30 PM','8:00 PM'];
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const today = new Date(); today.setHours(0,0,0,0);
+
+let calYear = today.getFullYear(), calMonth = today.getMonth();
+let activeTutor = 'Dular';
+let modalDate = null, modalType = null;
+
+// Local mirror of Firestore data: { Dular: { 'YYYY-MM-DD': [{type,start,end,id}] } }
+const availability = { Dular: {}, Atreya: {}, Jack: {} };
+
+function setSyncStatus(state) {
+  const dot = document.getElementById('sync-dot');
+  const label = document.getElementById('sync-label');
+  dot.className = 'sync-dot' + (state === 'syncing' ? ' syncing' : state === 'error' ? ' error' : '');
+  label.textContent = state === 'live' ? 'Live' : state === 'syncing' ? 'Syncing…' : 'Error';
+}
+
+// Listen to all three tutors in real time
+['Dular','Atreya','Jack'].forEach(name => {
+  onSnapshot(collection(db, 'availability', name, 'slots'), (snap) => {
+    availability[name] = {};
+    snap.forEach(docSnap => {
+      const data = docSnap.data();
+      const key = data.date;
+      if (!availability[name][key]) availability[name][key] = [];
+      availability[name][key].push({ ...data, id: docSnap.id });
+    });
+    updateCounts();
+    renderCal();
+    document.getElementById('loading-overlay').classList.add('hidden');
+    setSyncStatus('live');
+  }, (err) => {
+    console.error(err);
+    setSyncStatus('error');
+    document.getElementById('loading-overlay').classList.add('hidden');
+  });
+});
+
+function dateKey(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+window.selectTutor = function(name, init, el) {
+  activeTutor = name;
+  document.querySelectorAll('.tutor-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('main-title').textContent = name + "'s Availability";
+  renderCal();
+};
+
+window.changeMonth = function(dir) {
+  calMonth += dir;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  renderCal();
+};
+
+function renderCal() {
+  document.getElementById('month-label').textContent = MONTHS[calMonth] + ' ' + calYear;
+  const grid = document.getElementById('cal-grid');
+  grid.innerHTML = '';
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  const data = availability[activeTutor];
+
+  for (let i = 0; i < firstDay; i++) {
+    const cell = document.createElement('div'); cell.className = 'cal-cell empty'; grid.appendChild(cell);
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(calYear, calMonth, d);
+    const key = dateKey(date);
+    const isPast = date < today;
+    const isToday = date.toDateString() === today.toDateString();
+    const slots = data[key] || [];
+
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell' + (isPast ? ' past' : '') + (isToday ? ' today' : '');
+
+    const dayNum = document.createElement('div'); dayNum.className = 'day-num'; dayNum.textContent = d;
+    cell.appendChild(dayNum);
+
+    const tags = document.createElement('div'); tags.className = 'slot-tags';
+    slots.forEach(slot => {
+      const tag = document.createElement('div');
+      tag.className = 'slot-tag ' + slot.type;
+      tag.textContent = slot.start + ' – ' + slot.end;
+      if (!isPast) tag.onclick = (e) => { e.stopPropagation(); openModal(date); };
+      tags.appendChild(tag);
+    });
+    cell.appendChild(tags);
+
+    if (!isPast) {
+      const addDot = document.createElement('div'); addDot.className = 'add-dot'; addDot.textContent = '+';
+      cell.appendChild(addDot);
+      cell.onclick = () => openModal(date);
+    }
+    grid.appendChild(cell);
+  }
+}
+
+function updateCounts() {
+  ['Dular','Atreya','Jack'].forEach(name => {
+    const total = Object.values(availability[name]).reduce((s, slots) => s + slots.length, 0);
+    document.getElementById('count-' + name).textContent = total + ' slot' + (total !== 1 ? 's' : '');
+  });
+}
+
+window.openModal = function(date) {
+  modalDate = date; modalType = null;
+  window.resetRepeat();
+  document.getElementById('opt-virtual').className = 'type-opt';
+  document.getElementById('opt-inperson').className = 'type-opt';
+  document.getElementById('btn-add-slot').disabled = true;
+  document.getElementById('modal-title').textContent = activeTutor + ' — Add Availability';
+  document.getElementById('modal-date').textContent = date.toLocaleDateString('en-US', {weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  populateTimePickers();
+  renderExistingSlots();
+  document.getElementById('modal-overlay').classList.remove('hidden');
+};
+
+window.closeModal = function() {
+  document.getElementById('modal-overlay').classList.add('hidden');
+  modalDate = null; modalType = null;
+};
+
+window.setType = function(type) {
+  modalType = type;
+  document.getElementById('opt-virtual').className = 'type-opt' + (type === 'virtual' ? ' sel-virtual' : '');
+  document.getElementById('opt-inperson').className = 'type-opt' + (type === 'inperson' ? ' sel-inperson' : '');
+  checkAddBtn();
+};
+
+function populateTimePickers() {
+  const start = document.getElementById('sel-start');
+  const end = document.getElementById('sel-end');
+  start.innerHTML = '<option value="">Start time</option>';
+  end.innerHTML = '<option value="">End time</option>';
+  TIMES.forEach(t => {
+    start.innerHTML += `<option value="${t}">${t}</option>`;
+    end.innerHTML += `<option value="${t}">${t}</option>`;
+  });
+  start.onchange = checkAddBtn; end.onchange = checkAddBtn;
+}
+
+function checkAddBtn() {
+  const s = document.getElementById('sel-start').value;
+  const e = document.getElementById('sel-end').value;
+  document.getElementById('btn-add-slot').disabled = !(modalType && s && e && TIMES.indexOf(e) > TIMES.indexOf(s));
+}
+
+function slotConflicts(slotId, newStart, newEnd) {
+  // Check if proposed times conflict with any OTHER slot on the same day for the same tutor
+  const key = dateKey(modalDate);
+  const allSlots = availability[activeTutor][key] || [];
+  const ns = TIMES.indexOf(newStart);
+  const ne = TIMES.indexOf(newEnd);
+  for (const s of allSlots) {
+    if (s.id === slotId) continue; // skip self
+    const ss = TIMES.indexOf(s.start);
+    const se = TIMES.indexOf(s.end);
+    // Overlap: new start < other end AND new end > other start
+    if (ns < se && ne > ss) return true;
+  }
+  return false;
+}
+
+function renderExistingSlots() {
+  const key = dateKey(modalDate);
+  const slots = (availability[activeTutor][key] || []);
+  const container = document.getElementById('existing-slots');
+  if (!slots.length) {
+    container.innerHTML = '<div style="font-size:0.85rem;color:var(--text-muted);padding:0.5rem 0 0.25rem;">No availability set for this day yet.</div>';
+    return;
+  }
+  container.innerHTML = '<div style="font-size:0.75rem;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-muted);margin-bottom:0.75rem;">Existing Availability</div>';
+  slots.forEach(slot => {
+    const rowId = 'slot-row-' + slot.id;
+    const div = document.createElement('div');
+    div.className = 'edit-slot-row';
+    div.id = rowId;
+
+    // Build time options HTML
+    let startOpts = '', endOpts = '';
+    TIMES.forEach(t => {
+      startOpts += `<option value="${t}" ${t === slot.start ? 'selected' : ''}>${t}</option>`;
+      endOpts   += `<option value="${t}" ${t === slot.end   ? 'selected' : ''}>${t}</option>`;
+    });
+
+    div.innerHTML = `
+      <div class="edit-slot-header">
+        <span class="edit-slot-label">${slot.type === 'virtual' ? '💻 Virtual' : '🏠 In-Person'}</span>
+        <div class="edit-slot-actions">
+          <button class="btn-sm-save" id="save-btn-${slot.id}" disabled>Save</button>
+          <button class="btn-sm-del">Delete</button>
+        </div>
+      </div>
+      <div class="edit-time-row">
+        <select id="edit-start-${slot.id}"><option value="">Start</option>${startOpts}</select>
+        <select id="edit-end-${slot.id}"><option value="">End</option>${endOpts}</select>
+      </div>
+      <div class="edit-conflict-msg" id="conflict-${slot.id}">Conflicts with another slot on this day.</div>
+    `;
+
+    // Change listeners — enable Save only when times are valid and no conflict
+    const startSel = div.querySelector('#edit-start-' + slot.id);
+    const endSel   = div.querySelector('#edit-end-'   + slot.id);
+    const saveBtn  = div.querySelector('#save-btn-'   + slot.id);
+    const conflictEl = div.querySelector('#conflict-'  + slot.id);
+
+    function checkEditValid() {
+      const s = startSel.value, e = endSel.value;
+      conflictEl.style.display = 'none';
+      saveBtn.disabled = true;
+      if (!s || !e) return;
+      if (TIMES.indexOf(e) <= TIMES.indexOf(s)) return; // end must be after start
+      if (s === slot.start && e === slot.end) return;    // no change
+      if (slotConflicts(slot.id, s, e)) {
+        conflictEl.style.display = 'block';
+        return;
+      }
+      saveBtn.disabled = false;
+    }
+    startSel.onchange = checkEditValid;
+    endSel.onchange   = checkEditValid;
+
+    // Save: update the doc in Firestore with new start/end
+    saveBtn.addEventListener('click', async () => {
+      const newStart = startSel.value;
+      const newEnd   = endSel.value;
+      // Double-check conflict before saving
+      if (slotConflicts(slot.id, newStart, newEnd)) {
+        conflictEl.style.display = 'block';
+        return;
+      }
+      setSyncStatus('syncing');
+      try {
+        await setDoc(doc(db, 'availability', activeTutor, 'slots', slot.id), {
+          date: key, type: slot.type, start: newStart, end: newEnd,
+          tutor: activeTutor, adminPassword: ADMIN_PASSWORD
+        });
+        showToast('Availability updated ✓');
+        saveBtn.disabled = true;
+      } catch(err) {
+        setSyncStatus('error');
+        showToast('Error updating — check console');
+        console.error(err);
+      }
+    });
+
+    // Delete — uses the existing confirm overlay
+    div.querySelector('.btn-sm-del').addEventListener('click', () => {
+      const label = (slot.type === 'virtual' ? 'Virtual' : 'In-Person') + ' ' + slot.start + ' – ' + slot.end;
+      document.getElementById('confirm-msg').textContent = 'Delete "' + label + '" from ' + activeTutor + "'s availability? This cannot be undone.";
+      const confirmBtn = document.getElementById('confirm-delete-btn');
+      // Clone to remove any previous listener
+      const freshBtn = confirmBtn.cloneNode(true);
+      confirmBtn.parentNode.replaceChild(freshBtn, freshBtn.isConnected ? freshBtn : confirmBtn);
+      document.getElementById('confirm-delete-btn').onclick = () => {
+        document.getElementById('confirm-overlay').classList.add('hidden');
+        removeSlot(slot.id);
+      };
+      document.getElementById('confirm-overlay').classList.remove('hidden');
+    });
+
+    container.appendChild(div);
+  });
+}
+
+// ── Repeat state ──
+let repeatEnabled = false;
+let repeatFreq = 'weekly';
+let repeatDays = new Set(); // day-of-week numbers (0=Sun)
+let repeatUntil = null;
+
+window.toggleRepeat = function() {
+  repeatEnabled = document.getElementById('repeat-toggle-cb').checked;
+  const opts = document.getElementById('repeat-options');
+  opts.classList.toggle('visible', repeatEnabled);
+  if (repeatEnabled) window.updateRepeatPreview();
+};
+
+window.setRepeatFreq = function(freq, el) {
+  repeatFreq = freq;
+  document.querySelectorAll('.repeat-freq-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  // Hide day picker for daily
+  document.getElementById('repeat-days-wrap').style.display = freq === 'daily' ? 'none' : '';
+  window.updateRepeatPreview();
+};
+
+window.toggleRepeatDay = function(day, el) {
+  if (repeatDays.has(day)) { repeatDays.delete(day); el.classList.remove('active'); }
+  else { repeatDays.add(day); el.classList.add('active'); }
+  window.updateRepeatPreview();
+};
+
+window.updateRepeatPreview = function() {
+  const until = document.getElementById('repeat-until-date').value;
+  repeatUntil = until || null;
+  const preview = document.getElementById('repeat-preview');
+  if (!until) { preview.textContent = 'Select an end date to see preview.'; return; }
+  const dates = getRepeatDates();
+  if (dates.length === 0) { preview.textContent = 'No matching dates found.'; return; }
+  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const fmt = d => { const [y,m,day] = d.split('-'); return MONTHS[parseInt(m)-1] + ' ' + parseInt(day); };
+  const shown = dates.slice(0, 5).map(fmt).join(', ');
+  const extra = dates.length > 5 ? ' + ' + (dates.length - 5) + ' more' : '';
+  preview.textContent = dates.length + ' slot' + (dates.length !== 1 ? 's' : '') + ': ' + shown + extra;
+}
+
+window.getRepeatDates = function() {
+  if (!modalDate || !repeatUntil) return [];
+  const until = new Date(repeatUntil + 'T23:59:00');
+  const dates = [];
+  const start = new Date(modalDate);
+  start.setHours(0,0,0,0);
+  const cur = new Date(start);
+  // For weekly/biweekly, use selected days; for daily, every day
+  const daySet = repeatFreq === 'daily'
+    ? new Set([0,1,2,3,4,5,6])
+    : repeatDays.size > 0 ? repeatDays : new Set([start.getDay()]);
+  // Step size in days
+  const step = repeatFreq === 'biweekly' ? 14 : 7;
+  if (repeatFreq === 'daily') {
+    // Daily: every day from start to until
+    while (cur <= until) {
+      const key = cur.getFullYear() + '-' + String(cur.getMonth()+1).padStart(2,'0') + '-' + String(cur.getDate()).padStart(2,'0');
+      dates.push(key);
+      cur.setDate(cur.getDate() + 1);
+    }
+  } else {
+    // Weekly/biweekly: walk week by week, add matching days
+    // Find the Monday of the start week
+    const weekStart = new Date(start);
+    weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // back to Sunday
+    const weekCur = new Date(weekStart);
+    while (weekCur <= until) {
+      for (let d = 0; d < 7; d++) {
+        const candidate = new Date(weekCur);
+        candidate.setDate(weekCur.getDate() + d);
+        if (candidate < start) continue;
+        if (candidate > until) continue;
+        if (daySet.has(candidate.getDay())) {
+          const key = candidate.getFullYear() + '-' + String(candidate.getMonth()+1).padStart(2,'0') + '-' + String(candidate.getDate()).padStart(2,'0');
+          dates.push(key);
+        }
+      }
+      weekCur.setDate(weekCur.getDate() + step);
+    }
+  }
+  // Remove duplicates and sort
+  return [...new Set(dates)].sort();
+}
+
+// Reset repeat UI when modal opens
+window.resetRepeat = function() {
+  repeatEnabled = false;
+  repeatFreq = 'weekly';
+  repeatDays = new Set();
+  repeatUntil = null;
+  const cb = document.getElementById('repeat-toggle-cb');
+  if (cb) cb.checked = false;
+  const opts = document.getElementById('repeat-options');
+  if (opts) opts.classList.remove('visible');
+  document.querySelectorAll('.repeat-freq-btn').forEach((b,i) => b.classList.toggle('active', i === 0));
+  document.querySelectorAll('.repeat-day-btn').forEach(b => b.classList.remove('active'));
+  const untilInput = document.getElementById('repeat-until-date');
+  if (untilInput) {
+    untilInput.value = '';
+    // Set min to today
+    untilInput.min = today.toISOString().split('T')[0];
+  }
+  const preview = document.getElementById('repeat-preview');
+  if (preview) preview.textContent = '';
+  const daysWrap = document.getElementById('repeat-days-wrap');
+  if (daysWrap) daysWrap.style.display = '';
+  // Pre-select the current day of week
+  if (modalDate) {
+    const dow = modalDate.getDay();
+    repeatDays = new Set([dow]);
+    document.querySelectorAll('.repeat-day-btn').forEach(b => {
+      if (parseInt(b.dataset.day) === dow) b.classList.add('active');
+    });
+  }
+}
+
+window.addSlot = async function() {
+  const start = document.getElementById('sel-start').value;
+  const end = document.getElementById('sel-end').value;
+  setSyncStatus('syncing');
+  // Get all dates to save (single or repeat)
+  const dates = repeatEnabled ? window.getRepeatDates() : [dateKey(modalDate)];
+  if (dates.length === 0) { showToast('No dates to save'); return; }
+  try {
+    const batch = [];
+    for (const key of dates) {
+      const slotId = key + '_' + start.replace(/[: ]/g,'') + '_' + modalType;
+      batch.push(setDoc(doc(db, 'availability', activeTutor, 'slots', slotId), {
+        date: key, type: modalType, start, end, tutor: activeTutor, adminPassword: ADMIN_PASSWORD
+      }));
+    }
+    await Promise.all(batch);
+    showToast(dates.length > 1 ? dates.length + ' slots saved ✓' : 'Slot saved ✓');
+    closeModal();
+  } catch(e) {
+    setSyncStatus('error');
+    showToast('Error saving — check console');
+    console.error(e);
+  }
+};
+
+async function removeSlot(slotId) {
+  setSyncStatus('syncing');
+  try {
+    await deleteDoc(doc(db, 'availability', activeTutor, 'slots', slotId));
+    showToast('Slot removed');
+    // Refresh the modal slots list if the modal is still open
+    if (modalDate && !document.getElementById('modal-overlay').classList.contains('hidden')) {
+      renderExistingSlots();
+    }
+  } catch(e) {
+    setSyncStatus('error');
+    showToast('Error removing — check console');
+    console.error(e);
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+document.getElementById('modal-overlay').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+});
+
+renderCal();
+
+// ── Live bookings store ──
+const allBookings = []; // flat array of booking objects
+onSnapshot(collection(db, 'bookings'), (snap) => {
+  allBookings.length = 0;
+  snap.forEach(d => allBookings.push({ id: d.id, ...d.data() }));
+  renderBookingsTab();
+});
+
+let bkCalYear = today.getFullYear(), bkCalMonth = today.getMonth();
+
+window.showTab = function(tab) {
+  document.getElementById('page-availability').style.display = tab === 'availability' ? '' : 'none';
+  document.getElementById('page-bookings').style.display = tab === 'bookings' ? '' : 'none';
+  document.getElementById('tab-availability').classList.toggle('active', tab === 'availability');
+  document.getElementById('tab-bookings').classList.toggle('active', tab === 'bookings');
+  if (tab === 'bookings') renderBookingsTab();
+};
+
+window.changeBookingsMonth = function(dir) {
+  bkCalMonth += dir;
+  if (bkCalMonth < 0) { bkCalMonth = 11; bkCalYear--; }
+  if (bkCalMonth > 11) { bkCalMonth = 0; bkCalYear++; }
+  renderBookingsTab();
+};
+
+window.renderBookingsTab = function() {
+  const label = document.getElementById('bookings-month-label');
+  if (!label) return;
+  label.textContent = MONTHS[bkCalMonth] + ' ' + bkCalYear;
+  const filterTutor = document.getElementById('bookings-tutor-select').value;
+  const grid = document.getElementById('bookings-cal-grid');
+  grid.innerHTML = '';
+  const firstDay = new Date(bkCalYear, bkCalMonth, 1).getDay();
+  const daysInMonth = new Date(bkCalYear, bkCalMonth + 1, 0).getDate();
+
+  for (let i = 0; i < firstDay; i++) {
+    const cell = document.createElement('div'); cell.className = 'cal-cell empty'; grid.appendChild(cell);
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(bkCalYear, bkCalMonth, d);
+    const key = bkCalYear + '-' + String(bkCalMonth+1).padStart(2,'0') + '-' + String(d).padStart(2,'0');
+    const isToday = date.toDateString() === today.toDateString();
+    const dayBookings = allBookings.filter(b => b.date === key && (filterTutor === 'all' || b.tutor === filterTutor));
+
+    const cell = document.createElement('div');
+    cell.className = 'cal-cell' + (isToday ? ' today' : '');
+    cell.style.cursor = dayBookings.length ? 'pointer' : 'default';
+
+    const dayNum = document.createElement('div'); dayNum.className = 'day-num'; dayNum.textContent = d;
+    cell.appendChild(dayNum);
+
+    const tags = document.createElement('div');
+    const toMins = t => { if (!t) return 0; const [time, ap] = t.split(' '); let [h, m] = time.split(':').map(Number); if (ap === 'PM' && h !== 12) h += 12; if (ap === 'AM' && h === 12) h = 0; return h * 60 + m; };
+    const sortedDay = [...dayBookings].sort((a, b) => {
+      const getS = x => x.startTime || (x.time || '').split(' – ')[0] || '';
+      return toMins(getS(a)) - toMins(getS(b));
+    });
+    sortedDay.slice(0, 3).forEach(b => {
+      const tag = document.createElement('span');
+      const tagType = b.type === 'consultation' ? 'consultation' : (b.type || 'virtual');
+      tag.className = 'bk-tag ' + tagType;
+      const tutorLabel = filterTutor === 'all' ? (b.tutor || '') + ' · ' : '';
+      tag.textContent = tutorLabel + (b.startTime || b.time || '');
+      tags.appendChild(tag);
+    });
+    if (dayBookings.length > 3) {
+      const more = document.createElement('span');
+      more.style.cssText = 'font-size:0.67rem;color:var(--text-muted);padding:2px 4px;display:block;';
+      more.textContent = '+' + (dayBookings.length - 3) + ' more';
+      tags.appendChild(more);
+    }
+    cell.appendChild(tags);
+
+    if (dayBookings.length) {
+      cell.onclick = () => showBookingDetail(key, sortedDay);
+    }
+    grid.appendChild(cell);
+  }
+};
+
+function buildGCalUrl(b) {
+  // Build a Google Calendar event URL for a booking
+  const toMinsLocal = t => {
+    if (!t) return 0;
+    const [time, ap] = t.split(' ');
+    let [h, m] = time.split(':').map(Number);
+    if (ap === 'PM' && h !== 12) h += 12;
+    if (ap === 'AM' && h === 12) h = 0;
+    return h * 60 + m;
+  };
+  // Format date as YYYYMMDD
+  const dateParts = (b.date || '').split('-');
+  if (dateParts.length !== 3) return '#';
+  const dateStr = dateParts.join('');
+  // Format times as HHMMSS
+  const startMins = toMinsLocal(b.startTime || (b.time || '').split(' – ')[0]);
+  const endMins = toMinsLocal(b.endTime || (b.time || '').split(' – ')[1]);
+  const pad = n => String(Math.floor(n / 60)).padStart(2,'0') + String(n % 60).padStart(2,'0') + '00';
+  const start = dateStr + 'T' + pad(startMins);
+  const end = dateStr + 'T' + pad(endMins);
+  const typeLabel = b.type === 'consultation' ? 'LexPreps Free Consultation' : ('LexPreps ' + (b.type === 'inperson' ? 'In-Person' : 'Virtual') + ' Lesson');
+  const details = 'Tutor: ' + (b.tutor || '') + (b.location ? '%0ALocation: ' + b.location : '') + (b.userName ? '%0AStudent: ' + b.userName : '');
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(typeLabel)}&dates=${start}/${end}&details=${details}&location=${encodeURIComponent(b.location || '')}`;
+}
+
+function showBookingDetail(key, bookings) {
+  const panel = document.getElementById('booking-detail-panel');
+  const dateObj = new Date(key + 'T12:00:00');
+  document.getElementById('detail-date-label').textContent = dateObj.toLocaleDateString('en-US', {weekday:'long', month:'long', day:'numeric', year:'numeric'});
+  const list = document.getElementById('detail-list');
+  list.innerHTML = '';
+  const detailToMins = t => { if (!t) return 0; const [time, ap] = t.split(' '); let [h, m] = time.split(':').map(Number); if (ap === 'PM' && h !== 12) h += 12; if (ap === 'AM' && h === 12) h = 0; return h * 60 + m; };
+  [...bookings].sort((a, b) => {
+    const getS = x => x.startTime || (x.time || '').split(' – ')[0] || '';
+    return detailToMins(getS(a)) - detailToMins(getS(b));
+  }).forEach(b => {
+    const row = document.createElement('div');
+    row.className = 'detail-row';
+    const timeLabel = (b.startTime || b.time || '—') + (b.endTime ? ' – ' + b.endTime : '');
+    const tutorLabel = b.tutor || '—';
+    const durLabel = b.durationMins ? b.durationMins + ' min' : '';
+    const badgeType = b.type === 'consultation' ? 'consultation' : (b.type || 'virtual');
+    const badgeLabel = b.type === 'consultation'
+      ? ('🤝 Consultation (' + (b.consultFormat === 'inperson' ? 'In-Person' : 'Virtual') + ')')
+      : (b.type === 'inperson' ? '🏠 In-Person' : '💻 Virtual');
+    const gcalUrl = buildGCalUrl(b);
+    row.innerHTML = `
+      <div>
+        <div style="font-weight:600;color:var(--navy);font-size:0.95rem;">${timeLabel}</div>
+        <div style="font-size:0.82rem;color:var(--text-muted);margin-top:2px;">
+          Tutor: ${tutorLabel}${durLabel ? ' · ' + durLabel : ''}
+          ${b.studentName ? '<br>👤 Student: <strong style="color:var(--navy)">' + b.studentName + '</strong>' : ''}
+          ${b.userEmail ? '<br>📧 Booked by: ' + b.userEmail : ''}
+          ${b.platform ? '<br>💻 Platform: <strong style="color:var(--navy)">' + b.platform + '</strong>' : ''}
+          ${b.location ? '<br>📍 ' + b.location : ''}
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.6rem;flex-wrap:wrap;justify-content:flex-end;">
+        <span class="detail-badge ${badgeType}">${badgeLabel}</span>
+        <a href="${gcalUrl}" target="_blank" style="font-size:0.78rem;font-weight:600;color:var(--navy-light);text-decoration:none;border:1px solid var(--border);border-radius:6px;padding:0.28rem 0.6rem;white-space:nowrap;" title="Add to Google Calendar">📅 GCal</a>
+        <button class="btn-danger" data-id="${b.id}" data-label="${timeLabel} with ${tutorLabel}">Delete</button>
+      </div>
+    `;
+    row.querySelector('.btn-danger').addEventListener('click', () => {
+      confirmDeleteBooking(b.id, timeLabel + ' with ' + tutorLabel);
+    });
+    list.appendChild(row);
+  });
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function confirmDeleteBooking(bookingId, label) {
+  document.getElementById('confirm-msg').textContent = `Delete "${label}"? This will free up the time slot for new bookings.`;
+  const btn = document.getElementById('confirm-delete-btn');
+  btn.onclick = async () => {
+    document.getElementById('confirm-overlay').classList.add('hidden');
+    setSyncStatus('syncing');
+    try {
+      await deleteDoc(doc(db, 'bookings', bookingId));
+      showToast('Booking deleted ✓');
+      document.getElementById('booking-detail-panel').style.display = 'none';
+    } catch(e) {
+      setSyncStatus('error');
+      showToast('Error deleting — check console');
+      console.error(e);
+    }
+  };
+  document.getElementById('confirm-overlay').classList.remove('hidden');
+}
+
+// ── Create Booking Modal ──
+// ── Time helpers (shared) ──
+function toMins(t) {
+  if (!t) return 0;
+  const [time, ap] = t.split(' ');
+  let [h, m] = time.split(':').map(Number);
+  if (ap === 'PM' && h !== 12) h += 12;
+  if (ap === 'AM' && h === 12) h = 0;
+  return h * 60 + m;
+}
+function fromMins(mins) {
+  const ap = mins >= 720 ? 'PM' : 'AM';
+  let h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h > 12) h -= 12;
+  if (h === 0) h = 12;
+  return h + ':' + String(m).padStart(2, '0') + ' ' + ap;
+}
+
+// Check if a proposed [startMins, endMins] conflicts with existing bookings for a tutor on a date.
+// Applies 30-min buffer after in-person bookings.
+function adminConflictsWithBookings(tutor, date, startMins, endMins, skipId) {
+  const dayBookings = allBookings.filter(b => b.tutor === tutor && b.date === date && b.id !== skipId);
+  for (const b of dayBookings) {
+    let bStart = b.startTime ? toMins(b.startTime) : (b.time ? toMins(b.time.split(' – ')[0]) : null);
+    let bEnd = b.endTime ? toMins(b.endTime) : (b.time ? toMins(b.time.split(' – ')[1]) : null);
+    if (bStart === null || bEnd === null) continue;
+    const buffer = b.type === 'inperson' ? 30 : 0;
+    const blockedUntil = bEnd + buffer;
+    if (startMins < blockedUntil && endMins > bStart) return { conflict: true, booking: b };
+  }
+  return { conflict: false };
+}
+
+let createType = null;
+let createDuration = null;
+
+window.openCreateBookingModal = function() {
+  createType = null;
+  createDuration = null;
+  document.getElementById('create-opt-virtual').className = 'type-opt';
+  document.getElementById('create-opt-inperson').className = 'type-opt';
+  document.getElementById('create-dur-60').className = 'type-opt';
+  document.getElementById('create-dur-120').className = 'type-opt';
+  document.getElementById('create-tutor').value = '';
+  document.getElementById('create-date').value = '';
+  document.getElementById('create-location').value = '';
+  document.getElementById('create-location-group').style.display = 'none';
+  document.getElementById('create-conflict-msg').style.display = 'none';
+  document.getElementById('create-endtime-preview').style.display = 'none';
+  document.getElementById('btn-save-booking').disabled = true;
+  const td = new Date();
+  document.getElementById('create-date').min = td.toISOString().split('T')[0];
+  // Populate start time picker
+  const start = document.getElementById('create-start');
+  start.innerHTML = '<option value="">Select start time…</option>';
+  TIMES.forEach(t => { start.innerHTML += `<option value="${t}">${t}</option>`; });
+  start.onchange = checkCreateBtn;
+  document.getElementById('create-tutor').onchange = checkCreateBtn;
+  document.getElementById('create-date').onchange = checkCreateBtn;
+  document.getElementById('create-modal-overlay').classList.remove('hidden');
+};
+
+window.closeCreateModal = function() {
+  document.getElementById('create-modal-overlay').classList.add('hidden');
+  createType = null; createDuration = null;
+};
+
+window.setCreateType = function(type) {
+  createType = type;
+  document.getElementById('create-opt-virtual').className = 'type-opt' + (type === 'virtual' ? ' sel-virtual' : '');
+  document.getElementById('create-opt-inperson').className = 'type-opt' + (type === 'inperson' ? ' sel-inperson' : '');
+  // Show location field only for in-person
+  document.getElementById('create-location-group').style.display = type === 'inperson' ? 'block' : 'none';
+  checkCreateBtn();
+};
+
+window.setCreateDuration = function(mins, el) {
+  createDuration = mins;
+  document.getElementById('create-dur-60').className = 'type-opt';
+  document.getElementById('create-dur-120').className = 'type-opt';
+  el.className = 'type-opt sel-virtual';
+  checkCreateBtn();
+};
+
+function checkCreateBtn() {
+  const tutor = document.getElementById('create-tutor').value;
+  const date = document.getElementById('create-date').value;
+  const startVal = document.getElementById('create-start').value;
+  const conflictEl = document.getElementById('create-conflict-msg');
+  const previewEl = document.getElementById('create-endtime-preview');
+
+  // Hide conflict/preview until we have enough info
+  conflictEl.style.display = 'none';
+  previewEl.style.display = 'none';
+
+  if (!tutor || !date || !createType || !startVal || !createDuration) {
+    document.getElementById('btn-save-booking').disabled = true;
+    return;
+  }
+
+  const startMins = toMins(startVal);
+  const endMins = startMins + createDuration;
+  const endTime = fromMins(endMins);
+
+  // Show end time preview
+  previewEl.textContent = 'Lesson ends at ' + endTime + (createType === 'inperson' ? ' (+ 30 min buffer)' : '');
+  previewEl.style.display = 'block';
+
+  // Check for conflicts
+  const result = adminConflictsWithBookings(tutor, date, startMins, endMins, null);
+  if (result.conflict) {
+    const b = result.booking;
+    const bTime = (b.startTime || (b.time || '').split(' – ')[0]) + ' – ' + (b.endTime || (b.time || '').split(' – ')[1]);
+    conflictEl.textContent = 'Conflict: ' + tutor + ' already has a ' + (b.type === 'inperson' ? 'in-person' : 'virtual') + ' booking at ' + bTime + (b.type === 'inperson' ? ' (including 30-min buffer).' : '.');
+    conflictEl.style.display = 'block';
+    previewEl.style.display = 'none';
+    document.getElementById('btn-save-booking').disabled = true;
+    return;
+  }
+
+  document.getElementById('btn-save-booking').disabled = false;
+}
+
+window.saveCreatedBooking = async function() {
+  const tutor = document.getElementById('create-tutor').value;
+  const date = document.getElementById('create-date').value;
+  const startTime = document.getElementById('create-start').value;
+  const location = document.getElementById('create-location').value.trim();
+  const endMins = toMins(startTime) + createDuration;
+  const endTime = fromMins(endMins);
+
+  // Final conflict check before saving
+  const result = adminConflictsWithBookings(tutor, date, toMins(startTime), endMins, null);
+  if (result.conflict) {
+    showToast('Cannot save — booking conflicts with existing lesson');
+    return;
+  }
+
+  setSyncStatus('syncing');
+  try {
+    await addDoc(collection(db, 'bookings'), {
+      tutor, date, type: createType,
+      startTime, endTime,
+      durationMins: createDuration,
+      time: startTime + ' – ' + endTime,
+      location: location || null,
+      createdBy: 'admin',
+      createdAt: new Date().toISOString()
+    });
+    closeCreateModal();
+    showToast('Booking created ✓');
+    showTab('bookings');
+  } catch(e) {
+    setSyncStatus('error');
+    showToast('Error creating booking — check console');
+    console.error(e);
+  }
+};
+
+// Close create modal on overlay click
+document.getElementById('create-modal-overlay').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('create-modal-overlay')) closeCreateModal();
+});
+// Close confirm overlay on overlay click
+document.getElementById('confirm-overlay').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('confirm-overlay')) e.target.classList.add('hidden');
+});
+
+</script>
+</body>
+</html>
